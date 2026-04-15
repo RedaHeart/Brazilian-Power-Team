@@ -94,7 +94,7 @@ export const ensureClassesForRange = async ({ from, to }: DateRange) => {
         if (!alreadyExists) {
           classesToInsert.push({
             ...candidate,
-            type: 'Gi',
+            type: 'GI',
             template_id: template.id,
           });
         }
