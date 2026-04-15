@@ -33,10 +33,15 @@ const sameTextArray = (left: string[] | null, right: string[]) => {
   return normalizedLeft.every((item, index) => item === normalizedRight[index]);
 };
 
+const sameInstant = (left: string, right: string | null) => {
+  if (!right) return false;
+  return new Date(left).getTime() === new Date(right).getTime();
+};
+
 const matchesTemplateClass = (existingClass: ExistingClass, candidate: ExistingClass) =>
   existingClass.title === candidate.title &&
-  existingClass.starts_at === candidate.starts_at &&
-  existingClass.ends_at === candidate.ends_at &&
+  sameInstant(existingClass.starts_at, candidate.starts_at) &&
+  sameInstant(existingClass.ends_at || '', candidate.ends_at) &&
   (existingClass.min_belt || null) === (candidate.min_belt || null) &&
   sameTextArray(existingClass.allowed_groups, candidate.allowed_groups || []);
 
