@@ -56,8 +56,9 @@ const transformTournament = (tournament: any) => ({
 const isPasswordRecoveryLink = () => {
   const hashParams = new URLSearchParams(window.location.hash.replace(/^#/, ''));
   const searchParams = new URLSearchParams(window.location.search);
+  const isResetPath = window.location.pathname === '/reset-password';
 
-  return hashParams.get('type') === 'recovery' || searchParams.get('type') === 'recovery';
+  return isResetPath || hashParams.get('type') === 'recovery' || searchParams.get('type') === 'recovery';
 };
 
 const Index = () => {
@@ -414,7 +415,7 @@ const Index = () => {
     );
   }
 
-  if (currentView === 'auth') return <AuthMenu initialMode={authMode} onBack={() => { setAuthMode('default'); setCurrentView('home'); }} onLogin={handleLogin} onCreateStudent={handleCreateStudentAccount} onResetPasswordDone={() => { setAuthMode('default'); setCurrentView('home'); window.history.replaceState({}, document.title, window.location.pathname); }} />;
+  if (currentView === 'auth') return <AuthMenu initialMode={authMode} onBack={() => { setAuthMode('default'); setCurrentView('home'); window.history.replaceState({}, document.title, '/'); }} onLogin={handleLogin} onCreateStudent={handleCreateStudentAccount} onResetPasswordDone={() => { setAuthMode('default'); setCurrentView('home'); window.history.replaceState({}, document.title, '/'); }} />;
   if (currentView === 'professor') return <ProfessorDashboard students={students} tournaments={tournaments} teachers={teachers} onBack={handleLogout} onViewStudent={(student: any) => { setSelectedStudent(student); setCurrentView('student-detail'); }} onEditStudent={(student: any) => { setSelectedStudent(student); setCurrentView('edit-student'); }} onManageTournaments={() => setCurrentView('tournaments')} onAddStudent={() => setCurrentView('add-student')} onViewReports={() => setCurrentView('reports')} onManagePayments={(student: any) => { setSelectedStudent(student); setCurrentView('payment-manager'); }} onPromoteToTeacher={handlePromoteToTeacher} onManageAttendance={() => setCurrentView('attendance')} getBeltColor={getBeltColor} />;
   if (currentView === 'payment-manager' && selectedStudent) return <PaymentManager student={selectedStudent} onBack={() => setCurrentView('professor')} onUpdateStudent={handleUpdateStudent} getBeltColor={getBeltColor} />;
   if (currentView === 'attendance') return <AttendanceManager students={students} onBack={() => setCurrentView('professor')} getBeltColor={getBeltColor} />;

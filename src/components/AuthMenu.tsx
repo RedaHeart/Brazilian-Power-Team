@@ -155,7 +155,7 @@ const AuthMenu = ({ initialMode = 'default', onBack, onLogin, onCreateStudent, o
     setLoading(true);
     try {
       const { error } = await supabase.auth.resetPasswordForEmail(forgotEmail, {
-        redirectTo: window.location.origin,
+        redirectTo: `${window.location.origin}/reset-password`,
       });
 
       if (error) {
