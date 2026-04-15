@@ -53,6 +53,13 @@ const transformTournament = (tournament: any) => ({
   }, {}),
 });
 
+const isPasswordRecoveryLink = () => {
+  const hashParams = new URLSearchParams(window.location.hash.replace(/^#/, ''));
+  const searchParams = new URLSearchParams(window.location.search);
+
+  return hashParams.get('type') === 'recovery' || searchParams.get('type') === 'recovery';
+};
+
 const Index = () => {
   const [currentView, setCurrentView] = useState('home');
   const [authMode, setAuthMode] = useState<'default' | 'reset-password'>('default');
@@ -103,13 +110,18 @@ const Index = () => {
       setLoading(true);
 
       try {
+        if (isPasswordRecoveryLink()) {
+          setAuthMode('reset-password');
+          setCurrentView('auth');
+        }
+
         await Promise.all([loadStudents(), loadTeachers(), loadTournaments()]);
 
         const {
           data: { session },
         } = await supabase.auth.getSession();
 
-        if (session) {
+        if (session && !isPasswordRecoveryLink()) {
           const { data: profile } = await supabase.from('profiles').select('*').eq('id', session.user.id).single();
 
           if (profile) {
@@ -137,6 +149,13 @@ const Index = () => {
     return () => {
       listener.subscription.unsubscribe();
     };
+  }, []);
+
+  useEffect(() => {
+    if (!isPasswordRecoveryLink()) return;
+
+    setAuthMode('reset-password');
+    setCurrentView('auth');
   }, []);
 
   const getBeltColor = (belt: string) => {
@@ -395,7 +414,7 @@ const Index = () => {
     );
   }
 
-  if (currentView === 'auth') return <AuthMenu initialMode={authMode} onBack={() => { setAuthMode('default'); setCurrentView('home'); }} onLogin={handleLogin} onCreateStudent={handleCreateStudentAccount} onResetPasswordDone={() => setAuthMode('default')} />;
+  if (currentView === 'auth') return <AuthMenu initialMode={authMode} onBack={() => { setAuthMode('default'); setCurrentView('home'); }} onLogin={handleLogin} onCreateStudent={handleCreateStudentAccount} onResetPasswordDone={() => { setAuthMode('default'); setCurrentView('home'); window.history.replaceState({}, document.title, window.location.pathname); }} />;
   if (currentView === 'professor') return <ProfessorDashboard students={students} tournaments={tournaments} teachers={teachers} onBack={handleLogout} onViewStudent={(student: any) => { setSelectedStudent(student); setCurrentView('student-detail'); }} onEditStudent={(student: any) => { setSelectedStudent(student); setCurrentView('edit-student'); }} onManageTournaments={() => setCurrentView('tournaments')} onAddStudent={() => setCurrentView('add-student')} onViewReports={() => setCurrentView('reports')} onManagePayments={(student: any) => { setSelectedStudent(student); setCurrentView('payment-manager'); }} onPromoteToTeacher={handlePromoteToTeacher} onManageAttendance={() => setCurrentView('attendance')} getBeltColor={getBeltColor} />;
   if (currentView === 'payment-manager' && selectedStudent) return <PaymentManager student={selectedStudent} onBack={() => setCurrentView('professor')} onUpdateStudent={handleUpdateStudent} getBeltColor={getBeltColor} />;
   if (currentView === 'attendance') return <AttendanceManager students={students} onBack={() => setCurrentView('professor')} getBeltColor={getBeltColor} />;
