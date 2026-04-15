@@ -4,6 +4,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { ArrowLeft, Trophy, Calendar, Phone, Mail, User, UserPlus, UserMinus, ClipboardList, X, Clock, Camera, Loader2 } from 'lucide-react';
+import { buildCurrentMonthRange, ensureClassesForRange } from '@/lib/class-schedule';
 import { supabase } from '@/lib/supabase';
 import { toast } from 'sonner';
 
@@ -32,22 +33,28 @@ const StudentProfile = ({ student, tournaments, allTournaments, onBack, onRegist
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
-    const now = new Date();
-    const from = new Date(now.getFullYear(), now.getMonth(), 1).toISOString();
-    const to = new Date(now.getFullYear(), now.getMonth() + 1, 0, 23, 59, 59).toISOString();
-    supabase
-      .from('classes')
-      .select('*')
-      .gte('starts_at', from)
-      .lte('starts_at', to)
-      .order('starts_at', { ascending: true })
-      .then(({ data }) => setClasses((data || []).filter(cls => isEligible(student, cls))));
+    const loadClasses = async () => {
+      const { from, to } = buildCurrentMonthRange();
+      await ensureClassesForRange({ from, to });
 
-    supabase
-      .from('enrollments')
-      .select('class_id')
-      .eq('student_id', student.id)
-      .then(({ data }) => setEnrolledIds(new Set((data || []).map((e: any) => e.class_id))));
+      const [{ data: classData }, { data: enrollmentData }] = await Promise.all([
+        supabase
+          .from('classes')
+          .select('*')
+          .gte('starts_at', from.toISOString())
+          .lte('starts_at', to.toISOString())
+          .order('starts_at', { ascending: true }),
+        supabase
+          .from('enrollments')
+          .select('class_id')
+          .eq('student_id', student.id),
+      ]);
+
+      setClasses((classData || []).filter((cls) => isEligible(student, cls)));
+      setEnrolledIds(new Set((enrollmentData || []).map((entry: any) => entry.class_id)));
+    };
+
+    loadClasses();
   }, []);
 
   const handleEnroll = async (cls: any) => {

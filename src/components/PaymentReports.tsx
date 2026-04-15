@@ -3,6 +3,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { ArrowLeft, AlertCircle, CheckCircle, CreditCard, ClipboardList, ChevronDown, ChevronUp } from 'lucide-react';
+import { buildCurrentMonthRange, buildCurrentWeekRange, buildCurrentYearRange, ensureClassesForRange } from '@/lib/class-schedule';
 import { supabase } from '@/lib/supabase';
 
 const MONTH_NAMES = ['Jan','Fev','Mar','Abr','Mai','Jun','Jul','Ago','Set','Out','Nov','Dez'];
@@ -21,33 +22,6 @@ const isEligible = (student: any, cls: any) => {
   return true;
 };
 const MONTH_FULL = ['Janeiro','Fevereiro','Março','Abril','Maio','Junho','Julho','Agosto','Setembro','Outubro','Novembro','Dezembro'];
-
-const getWeekRange = () => {
-  const now = new Date();
-  const monday = new Date(now);
-  monday.setDate(now.getDate() - ((now.getDay() + 6) % 7));
-  monday.setHours(0, 0, 0, 0);
-  const sunday = new Date(monday);
-  sunday.setDate(monday.getDate() + 6);
-  sunday.setHours(23, 59, 59, 999);
-  return { from: monday, to: sunday };
-};
-
-const getMonthRange = () => {
-  const now = new Date();
-  return {
-    from: new Date(now.getFullYear(), now.getMonth(), 1),
-    to: new Date(now.getFullYear(), now.getMonth() + 1, 0, 23, 59, 59),
-  };
-};
-
-const getYearRange = () => {
-  const now = new Date();
-  return {
-    from: new Date(now.getFullYear(), 0, 1),
-    to: new Date(now.getFullYear(), 11, 31, 23, 59, 59),
-  };
-};
 
 const currentYYYYMM = () => {
   const now = new Date();
@@ -77,7 +51,8 @@ const PaymentReports = ({ students, onBack, getBeltColor }) => {
 
   const loadAttendance = async () => {
     setLoadingAtt(true);
-    const range = attPeriod === 'weekly' ? getWeekRange() : attPeriod === 'monthly' ? getMonthRange() : getYearRange();
+    const range = attPeriod === 'weekly' ? buildCurrentWeekRange() : attPeriod === 'monthly' ? buildCurrentMonthRange() : buildCurrentYearRange();
+    await ensureClassesForRange(range);
 
     const { data: classData } = await supabase
       .from('classes').select('id, title, starts_at, min_belt, allowed_groups')
@@ -372,7 +347,7 @@ const PaymentReports = ({ students, onBack, getBeltColor }) => {
                 </CardTitle>
                 {attPeriod === 'weekly' && (
                   <CardDescription>
-                    {getWeekRange().from.toLocaleDateString('pt-PT')} – {getWeekRange().to.toLocaleDateString('pt-PT')}
+                    {buildCurrentWeekRange().from.toLocaleDateString('pt-PT')} – {buildCurrentWeekRange().to.toLocaleDateString('pt-PT')}
                     {' · '}clica num aluno para ver o detalhe das aulas
                   </CardDescription>
                 )}

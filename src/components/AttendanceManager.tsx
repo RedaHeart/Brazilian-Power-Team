@@ -6,6 +6,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Switch } from '@/components/ui/switch';
 import { ArrowLeft, Save, Calendar, ClipboardList, Plus, Users, CheckCircle, XCircle, ChevronLeft, ChevronRight } from 'lucide-react';
+import { buildMonthRange, ensureClassesForRange } from '@/lib/class-schedule';
 import { supabase } from '@/lib/supabase';
 import { toast } from 'sonner';
 
@@ -28,11 +29,12 @@ const AttendanceManager = ({ students, onBack, getBeltColor }) => {
   useEffect(() => { loadClasses(); }, [calYear, calMonth]);
 
   const loadClasses = async () => {
-    const from = new Date(calYear, calMonth, 1).toISOString();
-    const to = new Date(calYear, calMonth + 1, 0, 23, 59, 59).toISOString();
+    const { from, to } = buildMonthRange(calYear, calMonth);
+    await ensureClassesForRange({ from, to });
+
     const { data, error } = await supabase
       .from('classes').select('*')
-      .gte('starts_at', from).lte('starts_at', to)
+      .gte('starts_at', from.toISOString()).lte('starts_at', to.toISOString())
       .order('starts_at', { ascending: true });
     if (error) toast.error('Erro ao carregar aulas.');
     setClasses(data || []);

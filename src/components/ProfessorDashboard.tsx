@@ -24,24 +24,11 @@ import {
   XCircle,
 } from 'lucide-react';
 import AppHeader from '@/components/AppHeader';
+import { buildWeekRange, ensureClassesForRange } from '@/lib/class-schedule';
 import { supabase } from '@/lib/supabase';
 import { toast } from 'sonner';
 
 const DAY_NAMES = ['Seg', 'Ter', 'Qua', 'Qui', 'Sex', 'Sab', 'Dom'];
-
-const getWeekRange = (offset: number) => {
-  const now = new Date();
-  const day = now.getDay();
-  const monday = new Date(now);
-  monday.setDate(now.getDate() - ((day + 6) % 7) + offset * 7);
-  monday.setHours(0, 0, 0, 0);
-
-  const sunday = new Date(monday);
-  sunday.setDate(monday.getDate() + 6);
-  sunday.setHours(23, 59, 59, 999);
-
-  return { monday, sunday };
-};
 
 const initialsFromName = (name: string) =>
   name
@@ -109,7 +96,7 @@ const ProfessorDashboard = ({
 
   const selectedStudent = filteredStudents.find((person: any) => person.id === selectedStudentId) || null;
 
-  const { monday, sunday } = getWeekRange(weekOffset);
+  const { from: monday, to: sunday } = buildWeekRange(weekOffset);
   const todayDayIdx = (new Date().getDay() + 6) % 7;
 
   useEffect(() => {
@@ -119,6 +106,8 @@ const ProfessorDashboard = ({
   }, [weekOffset]);
 
   const loadWeekClasses = async () => {
+    await ensureClassesForRange({ from: monday, to: sunday });
+
     const { data } = await supabase
       .from('classes')
       .select('*')
