@@ -106,14 +106,23 @@ const ProfessorDashboard = ({
   }, [weekOffset]);
 
   const loadWeekClasses = async () => {
-    await ensureClassesForRange({ from: monday, to: sunday });
+    try {
+      await ensureClassesForRange({ from: monday, to: sunday });
+    } catch (error) {
+      console.error('Failed to generate weekly classes from templates', error);
+    }
 
-    const { data } = await supabase
+    const { data, error } = await supabase
       .from('classes')
       .select('*')
       .gte('starts_at', monday.toISOString())
       .lte('starts_at', sunday.toISOString())
       .order('starts_at', { ascending: true });
+
+    if (error) {
+      toast.error('Erro ao carregar aulas da semana.');
+      return;
+    }
 
     const classes = data || [];
     setWeekClasses(classes);

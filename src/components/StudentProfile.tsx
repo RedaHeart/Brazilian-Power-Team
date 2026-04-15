@@ -35,7 +35,11 @@ const StudentProfile = ({ student, tournaments, allTournaments, onBack, onRegist
   useEffect(() => {
     const loadClasses = async () => {
       const { from, to } = buildCurrentMonthRange();
-      await ensureClassesForRange({ from, to });
+      try {
+        await ensureClassesForRange({ from, to });
+      } catch (generationError) {
+        console.error('Failed to generate student classes from templates', generationError);
+      }
 
       const [{ data: classData }, { data: enrollmentData }] = await Promise.all([
         supabase

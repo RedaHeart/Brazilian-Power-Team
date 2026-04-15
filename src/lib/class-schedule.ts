@@ -11,8 +11,6 @@ type ClassTemplate = {
   weekday: number;
   start_time: string;
   end_time: string;
-  allowed_groups: string[];
-  min_belt: string | null;
   active: boolean;
 };
 
@@ -20,25 +18,12 @@ type ExistingClass = {
   title: string;
   starts_at: string;
   ends_at: string | null;
-  allowed_groups: string[] | null;
-  min_belt: string | null;
 };
 
-const sameTextArray = (left: string[] | null, right: string[]) => {
-  const normalizedLeft = [...(left || [])].sort();
-  const normalizedRight = [...right].sort();
-
-  if (normalizedLeft.length !== normalizedRight.length) return false;
-
-  return normalizedLeft.every((item, index) => item === normalizedRight[index]);
-};
-
-const matchesTemplateClass = (existingClass: ExistingClass, candidate: Omit<ExistingClass, 'starts_at' | 'ends_at'> & { starts_at: string; ends_at: string }) =>
+const matchesTemplateClass = (existingClass: ExistingClass, candidate: ExistingClass) =>
   existingClass.title === candidate.title &&
   existingClass.starts_at === candidate.starts_at &&
-  existingClass.ends_at === candidate.ends_at &&
-  (existingClass.min_belt || null) === (candidate.min_belt || null) &&
-  sameTextArray(existingClass.allowed_groups, candidate.allowed_groups);
+  existingClass.ends_at === candidate.ends_at;
 
 const buildClassDateTime = (date: Date, timeValue: string) => {
   const [hours, minutes] = timeValue.split(':').map(Number);
@@ -51,12 +36,12 @@ export const ensureClassesForRange = async ({ from, to }: DateRange) => {
   const [{ data: templates, error: templateError }, { data: existingClasses, error: classError }] = await Promise.all([
     supabase
       .from('class_templates')
-      .select('id, name, weekday, start_time, end_time, allowed_groups, min_belt, active')
+      .select('id, name, weekday, start_time, end_time, active')
       .eq('active', true)
       .order('weekday', { ascending: true }),
     supabase
       .from('classes')
-      .select('title, starts_at, ends_at, allowed_groups, min_belt')
+      .select('title, starts_at, ends_at')
       .gte('starts_at', from.toISOString())
       .lte('starts_at', to.toISOString()),
   ]);
@@ -66,13 +51,7 @@ export const ensureClassesForRange = async ({ from, to }: DateRange) => {
 
   const activeTemplates = (templates || []) as ClassTemplate[];
   const currentClasses = (existingClasses || []) as ExistingClass[];
-  const classesToInsert: Array<{
-    title: string;
-    starts_at: string;
-    ends_at: string;
-    allowed_groups: string[];
-    min_belt: string | null;
-  }> = [];
+  const classesToInsert: ExistingClass[] = [];
 
   const cursor = new Date(from);
   cursor.setHours(0, 0, 0, 0);
@@ -89,8 +68,6 @@ export const ensureClassesForRange = async ({ from, to }: DateRange) => {
           title: template.name,
           starts_at: startsAt.toISOString(),
           ends_at: endsAt.toISOString(),
-          allowed_groups: template.allowed_groups || [],
-          min_belt: template.min_belt,
         };
 
         const alreadyExists =

@@ -30,7 +30,11 @@ const AttendanceManager = ({ students, onBack, getBeltColor }) => {
 
   const loadClasses = async () => {
     const { from, to } = buildMonthRange(calYear, calMonth);
-    await ensureClassesForRange({ from, to });
+    try {
+      await ensureClassesForRange({ from, to });
+    } catch (generationError) {
+      console.error('Failed to generate monthly classes from templates', generationError);
+    }
 
     const { data, error } = await supabase
       .from('classes').select('*')

@@ -52,7 +52,11 @@ const PaymentReports = ({ students, onBack, getBeltColor }) => {
   const loadAttendance = async () => {
     setLoadingAtt(true);
     const range = attPeriod === 'weekly' ? buildCurrentWeekRange() : attPeriod === 'monthly' ? buildCurrentMonthRange() : buildCurrentYearRange();
-    await ensureClassesForRange(range);
+    try {
+      await ensureClassesForRange(range);
+    } catch (generationError) {
+      console.error('Failed to generate report classes from templates', generationError);
+    }
 
     const { data: classData } = await supabase
       .from('classes').select('id, title, starts_at, min_belt, allowed_groups')
