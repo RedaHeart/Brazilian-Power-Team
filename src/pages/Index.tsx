@@ -247,6 +247,19 @@ const Index = () => {
     await loadTournaments();
   };
 
+  const handleDeleteTournament = async (tournamentId: string) => {
+    const { error } = await supabase.from('tournaments').delete().eq('id', tournamentId);
+
+    if (error) {
+      toast.error('Erro ao eliminar torneio.');
+      return false;
+    }
+
+    await loadTournaments();
+    toast.success('Torneio eliminado.');
+    return true;
+  };
+
   const handleRegisterForTournament = async (studentId: string, tournamentId: string) => {
     const { error } = await supabase.from('tournament_participants').insert({ tournament_id: tournamentId, student_id: studentId });
     if (error) {
@@ -435,8 +448,8 @@ const Index = () => {
     return <StudentProfile student={studentWithAchievements} tournaments={tournaments.filter((tournament: any) => tournament.participants.includes(selectedStudent.id))} allTournaments={tournaments} onBack={() => setCurrentView('professor')} onRegisterForTournament={handleRegisterForTournament} onUnregisterFromTournament={handleUnregisterFromTournament} getBeltColor={getBeltColor} />;
   }
 
-  if (currentView === 'tournaments') return <TournamentManager tournaments={tournaments} students={students} onBack={() => setCurrentView('professor')} onCreateTournament={handleCreateTournament} onEditTournament={(tournament: any) => { setSelectedTournament(tournament); setCurrentView('tournament-editor'); }} getBeltColor={getBeltColor} />;
-  if (currentView === 'tournament-editor' && selectedTournament) return <TournamentEditor tournament={selectedTournament} students={students} onBack={() => setCurrentView('tournaments')} onUpdateTournament={handleUpdateTournament} onRemoveParticipant={(tournamentId: string, studentId: string) => handleUnregisterFromTournament(studentId, tournamentId)} getBeltColor={getBeltColor} />;
+  if (currentView === 'tournaments') return <TournamentManager tournaments={tournaments} students={students} onBack={() => setCurrentView('professor')} onCreateTournament={handleCreateTournament} onEditTournament={(tournament: any) => { setSelectedTournament(tournament); setCurrentView('tournament-editor'); }} onDeleteTournament={handleDeleteTournament} getBeltColor={getBeltColor} />;
+  if (currentView === 'tournament-editor' && selectedTournament) return <TournamentEditor tournament={selectedTournament} students={students} onBack={() => setCurrentView('tournaments')} onUpdateTournament={handleUpdateTournament} onDeleteTournament={handleDeleteTournament} onRemoveParticipant={(tournamentId: string, studentId: string) => handleUnregisterFromTournament(studentId, tournamentId)} getBeltColor={getBeltColor} />;
 
   return (
     <div className="app-shell min-h-screen overflow-hidden text-white">

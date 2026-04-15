@@ -5,9 +5,9 @@ import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { ArrowLeft, Plus, Trophy, Calendar, MapPin, Users, Edit } from 'lucide-react';
+import { ArrowLeft, Plus, Trophy, Calendar, MapPin, Users, Edit, Trash2 } from 'lucide-react';
 
-const TournamentManager = ({ tournaments, students, onBack, onCreateTournament, onEditTournament, getBeltColor }) => {
+const TournamentManager = ({ tournaments, students, onBack, onCreateTournament, onEditTournament, onDeleteTournament, getBeltColor }) => {
   const [showCreateForm, setShowCreateForm] = useState(false);
   const [newTournament, setNewTournament] = useState({
     name: '',
@@ -41,6 +41,12 @@ const TournamentManager = ({ tournaments, students, onBack, onCreateTournament, 
       default:
         return 'bg-gray-100 text-gray-800';
     }
+  };
+
+  const handleDelete = async (tournament) => {
+    const shouldDelete = window.confirm(`Eliminar o torneio "${tournament.name}"? Esta ação remove também participantes e classificações.`);
+    if (!shouldDelete) return;
+    await onDeleteTournament(tournament.id);
   };
 
   return (
@@ -209,8 +215,12 @@ const TournamentManager = ({ tournaments, students, onBack, onCreateTournament, 
                       <Edit className="h-4 w-4 mr-1" />
                       Editar
                     </Button>
-                    <Button size="sm" variant="outline" className="hover:bg-green-50">
+                    <Button size="sm" variant="outline" className="hover:bg-green-50" onClick={() => onEditTournament(tournament)}>
                       Resultados
+                    </Button>
+                    <Button size="sm" variant="outline" className="text-red-600 hover:bg-red-50" onClick={() => handleDelete(tournament)}>
+                      <Trash2 className="h-4 w-4 mr-1" />
+                      Eliminar
                     </Button>
                   </div>
                 </div>
