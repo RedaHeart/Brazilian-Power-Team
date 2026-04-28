@@ -4,21 +4,24 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { ArrowLeft, Trophy, Calendar, Phone, Mail, User, UserPlus, UserMinus, ClipboardList, X, Clock, Camera, Loader2 } from 'lucide-react';
-import { buildCurrentMonthRange, ensureClassesForRange } from '@/lib/class-schedule';
+import { buildMonthRange, ensureClassesForRange } from '@/lib/class-schedule';
+import { getBeltRankForAccess } from '@/lib/belts';
 import { supabase } from '@/lib/supabase';
 import { toast } from 'sonner';
 
-const BELT_ORDER = ['BRANCA','AZUL','ROXA','MARROM','PRETA'];
-
 const isEligible = (student: any, cls: any) => {
   if (cls.min_belt) {
-    const studentBeltIdx = BELT_ORDER.indexOf(student.belt.toUpperCase());
-    const minBeltIdx = BELT_ORDER.indexOf(cls.min_belt);
+    const studentBeltIdx = getBeltRankForAccess(student.belt);
+    const minBeltIdx = getBeltRankForAccess(cls.min_belt);
     if (studentBeltIdx < minBeltIdx) return false;
   }
   if (cls.allowed_groups && cls.allowed_groups.length > 0) {
     const studentGroup = (student.category || '').toUpperCase();
     if (!cls.allowed_groups.includes(studentGroup)) return false;
+  }
+  if (cls.allowed_genders && cls.allowed_genders.length > 0) {
+    const studentGender = (student.gender || '').toUpperCase();
+    if (!cls.allowed_genders.includes(studentGender)) return false;
   }
   return true;
 };
@@ -30,11 +33,14 @@ const StudentProfile = ({ student, tournaments, allTournaments, onBack, onRegist
   const [enrolling, setEnrolling] = useState(false);
   const [avatarUrl, setAvatarUrl] = useState<string | null>(student.avatarUrl || null);
   const [uploading, setUploading] = useState(false);
+  const [monthOffset, setMonthOffset] = useState(0);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
     const loadClasses = async () => {
-      const { from, to } = buildCurrentMonthRange();
+      const selectedMonth = new Date();
+      selectedMonth.setMonth(selectedMonth.getMonth() + monthOffset);
+      const { from, to } = buildMonthRange(selectedMonth.getFullYear(), selectedMonth.getMonth());
       try {
         await ensureClassesForRange({ from, to });
       } catch (generationError) {
@@ -59,7 +65,7 @@ const StudentProfile = ({ student, tournaments, allTournaments, onBack, onRegist
     };
 
     loadClasses();
-  }, []);
+  }, [monthOffset, student.id, student.gender, student.category, student.belt]);
 
   const handleEnroll = async (cls: any) => {
     setEnrolling(true);
@@ -194,6 +200,15 @@ const StudentProfile = ({ student, tournaments, allTournaments, onBack, onRegist
                         <p className="font-medium text-slate-800">{student.weight}</p>
                       </div>
                     </div>
+                    {student.gender && (
+                      <div className="flex items-center space-x-3">
+                        <User className="h-5 w-5 text-slate-500" />
+                        <div>
+                          <p className="text-sm text-slate-600">Sexo</p>
+                          <p className="font-medium text-slate-800">{student.gender === 'FEMININO' ? 'Feminino' : 'Masculino'}</p>
+                        </div>
+                      </div>
+                    )}
                     <div className="flex items-center space-x-3">
                       <Calendar className="h-5 w-5 text-slate-500" />
                       <div>
@@ -211,23 +226,47 @@ const StudentProfile = ({ student, tournaments, allTournaments, onBack, onRegist
             {/* Aulas do mês — calendário */}
             <Card className="bg-white/80 backdrop-blur-sm border-0 shadow-md">
               <CardHeader>
-                <CardTitle className="text-slate-800 flex items-center">
-                  <ClipboardList className="h-5 w-5 mr-2 text-blue-600" />
-                  Aulas este mês
-                </CardTitle>
-                <CardDescription>
-                  {new Date().toLocaleDateString('pt-PT', { month: 'long', year: 'numeric' })} · clica numa aula para te inscreveres
-                </CardDescription>
+                <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
+                  <div>
+                    <CardTitle className="text-slate-800 flex items-center">
+                      <ClipboardList className="h-5 w-5 mr-2 text-blue-600" />
+                      Aulas do mes
+                    </CardTitle>
+                    <CardDescription>Clica numa aula para te inscreveres</CardDescription>
+                  </div>
+                  <div className="flex rounded-lg border border-slate-200 bg-slate-50 p-1">
+                    <Button
+                      type="button"
+                      size="sm"
+                      variant={monthOffset === 0 ? 'default' : 'ghost'}
+                      onClick={() => setMonthOffset(0)}
+                      className="h-8 rounded-md px-3 text-xs"
+                    >
+                      Este mes
+                    </Button>
+                    <Button
+                      type="button"
+                      size="sm"
+                      variant={monthOffset === 1 ? 'default' : 'ghost'}
+                      onClick={() => setMonthOffset(1)}
+                      className="h-8 rounded-md px-3 text-xs"
+                    >
+                      Proximo mes
+                    </Button>
+                  </div>
+                </div>
               </CardHeader>
               <CardContent>
                 {(() => {
                   const now = new Date();
-                  const year = now.getFullYear();
-                  const month = now.getMonth();
+                  const displayedMonth = new Date(now.getFullYear(), now.getMonth() + monthOffset, 1);
+                  const year = displayedMonth.getFullYear();
+                  const month = displayedMonth.getMonth();
                   const firstDay = new Date(year, month, 1);
                   const daysInMonth = new Date(year, month + 1, 0).getDate();
                   const startOffset = (firstDay.getDay() + 6) % 7;
                   const weekDays = ['Seg','Ter','Qua','Qui','Sex','Sáb','Dom'];
+                  const monthLabel = displayedMonth.toLocaleDateString('pt-PT', { month: 'long', year: 'numeric' });
 
                   const classByDay: Record<number, any[]> = {};
                   classes.forEach(cls => {
@@ -243,6 +282,7 @@ const StudentProfile = ({ student, tournaments, allTournaments, onBack, onRegist
 
                   return (
                     <div>
+                      <p className="mb-3 text-sm font-medium capitalize text-slate-600">{monthLabel}</p>
                       <div className="grid grid-cols-7 mb-1">
                         {weekDays.map(d => (
                           <div key={d} className="text-center text-xs font-medium text-slate-400 py-1">{d}</div>
@@ -251,8 +291,10 @@ const StudentProfile = ({ student, tournaments, allTournaments, onBack, onRegist
                       <div className="grid grid-cols-7 gap-1">
                         {cells.map((day, i) => {
                           if (!day) return <div key={i} />;
-                          const isToday = day === now.getDate();
-                          const isPast = new Date(year, month, day) < new Date(year, month, now.getDate());
+                          const isCurrentMonth = monthOffset === 0;
+                          const isToday = isCurrentMonth && day === now.getDate();
+                          const todayStart = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+                          const isPast = new Date(year, month, day) < todayStart;
                           const dayCls = classByDay[day] || [];
                           return (
                             <div

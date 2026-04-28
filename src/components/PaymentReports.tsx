@@ -4,20 +4,24 @@ import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { ArrowLeft, AlertCircle, CheckCircle, CreditCard, ClipboardList, ChevronDown, ChevronUp } from 'lucide-react';
 import { buildCurrentMonthRange, buildCurrentWeekRange, buildCurrentYearRange, ensureClassesForRange } from '@/lib/class-schedule';
+import { getBeltRankForAccess } from '@/lib/belts';
 import { supabase } from '@/lib/supabase';
 
 const MONTH_NAMES = ['Jan','Fev','Mar','Abr','Mai','Jun','Jul','Ago','Set','Out','Nov','Dez'];
-const BELT_ORDER = ['BRANCA','AZUL','ROXA','MARROM','PRETA'];
 
 const isEligible = (student: any, cls: any) => {
   if (cls.min_belt) {
-    const studentIdx = BELT_ORDER.indexOf(student.belt.toUpperCase());
-    const minIdx = BELT_ORDER.indexOf(cls.min_belt);
+    const studentIdx = getBeltRankForAccess(student.belt);
+    const minIdx = getBeltRankForAccess(cls.min_belt);
     if (studentIdx < minIdx) return false;
   }
   if (cls.allowed_groups && cls.allowed_groups.length > 0) {
     const studentGroup = (student.category || '').toUpperCase();
     if (!cls.allowed_groups.includes(studentGroup)) return false;
+  }
+  if (cls.allowed_genders && cls.allowed_genders.length > 0) {
+    const studentGender = (student.gender || '').toUpperCase();
+    if (!cls.allowed_genders.includes(studentGender)) return false;
   }
   return true;
 };
@@ -59,7 +63,7 @@ const PaymentReports = ({ students, onBack, getBeltColor }) => {
     }
 
     const { data: classData } = await supabase
-      .from('classes').select('id, title, starts_at, min_belt, allowed_groups')
+      .from('classes').select('id, title, starts_at, min_belt, allowed_groups, allowed_genders')
       .gte('starts_at', range.from.toISOString())
       .lte('starts_at', range.to.toISOString())
       .order('starts_at', { ascending: true });

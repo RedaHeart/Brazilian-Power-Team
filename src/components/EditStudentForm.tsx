@@ -8,6 +8,7 @@ import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, 
 import { ArrowLeft, Save, User, Plus, X, ShieldCheck, Calendar, Camera, Loader2 } from 'lucide-react';
 import { supabase } from '@/lib/supabase';
 import { toast } from 'sonner';
+import { getBeltOptionsForCategory } from '@/lib/belts';
 
 const MONTH_NAMES = ['Janeiro','Fevereiro','Março','Abril','Maio','Junho',
                      'Julho','Agosto','Setembro','Outubro','Novembro','Dezembro'];
@@ -34,6 +35,7 @@ const EditStudentForm = ({ student, onBack, onUpdateStudent, onPromoteToTeacher 
     belt: student.belt,
     category: student.category,
     weight: student.weight,
+    gender: student.gender || '',
     joinDate: student.joinDate || '',
   });
 
@@ -55,7 +57,7 @@ const EditStudentForm = ({ student, onBack, onUpdateStudent, onPromoteToTeacher 
   }, [student.joinDate]);
 
   const handleInputChange = (field: string, value: string) => {
-    setFormData(prev => ({ ...prev, [field]: value }));
+    setFormData(prev => ({ ...prev, [field]: value, ...(field === 'category' ? { belt: 'Branca' } : {}) }));
   };
 
   const handleAddAchievement = () => {
@@ -250,7 +252,7 @@ const EditStudentForm = ({ student, onBack, onUpdateStudent, onPromoteToTeacher 
               <CardDescription>Graduação, categoria e peso</CardDescription>
             </CardHeader>
             <CardContent>
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+              <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
                 <div className="space-y-2">
                   <Label htmlFor="belt">Graduação</Label>
                   <select 
@@ -259,11 +261,9 @@ const EditStudentForm = ({ student, onBack, onUpdateStudent, onPromoteToTeacher 
                     value={formData.belt}
                     onChange={(e) => handleInputChange('belt', e.target.value)}
                   >
-                    <option value="Branca">Branca</option>
-                    <option value="Azul">Azul</option>
-                    <option value="Roxa">Roxa</option>
-                    <option value="Marrom">Marrom</option>
-                    <option value="Preta">Preta</option>
+                    {getBeltOptionsForCategory(formData.category).map((belt) => (
+                      <option key={belt.value} value={belt.value}>{belt.label}</option>
+                    ))}
                   </select>
                 </div>
                 
@@ -275,6 +275,7 @@ const EditStudentForm = ({ student, onBack, onUpdateStudent, onPromoteToTeacher 
                     value={formData.category}
                     onChange={(e) => handleInputChange('category', e.target.value)}
                   >
+                    <option value="Kids">Kids</option>
                     <option value="Juvenil">Juvenil</option>
                     <option value="Adulto">Adulto</option>
                     <option value="Master">Master</option>
@@ -298,6 +299,20 @@ const EditStudentForm = ({ student, onBack, onUpdateStudent, onPromoteToTeacher 
                     <option value="Pesado">Pesado</option>
                     <option value="Super-pesado">Super-pesado</option>
                     <option value="Pesadíssimo">Pesadíssimo</option>
+                  </select>
+                </div>
+
+                <div className="space-y-2">
+                  <Label htmlFor="gender">Sexo</Label>
+                  <select
+                    id="gender"
+                    className="flex h-10 w-full rounded-md border border-input bg-white px-3 py-2 text-sm ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
+                    value={formData.gender}
+                    onChange={(e) => handleInputChange('gender', e.target.value)}
+                  >
+                    <option value="">Nao definido</option>
+                    <option value="MASCULINO">Masculino</option>
+                    <option value="FEMININO">Feminino</option>
                   </select>
                 </div>
               </div>

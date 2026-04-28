@@ -23,8 +23,15 @@ ALTER TABLE public.profiles
   ADD COLUMN IF NOT EXISTS email     text,
   ADD COLUMN IF NOT EXISTS phone     text,
   ADD COLUMN IF NOT EXISTS weight    text,
+  ADD COLUMN IF NOT EXISTS gender    text,
   ADD COLUMN IF NOT EXISTS category  text DEFAULT 'Adulto',
   ADD COLUMN IF NOT EXISTS join_date date DEFAULT current_date;
+
+ALTER TABLE public.class_templates
+  ADD COLUMN IF NOT EXISTS allowed_genders text[] DEFAULT '{}'::text[];
+
+ALTER TABLE public.classes
+  ADD COLUMN IF NOT EXISTS allowed_genders text[] DEFAULT '{}'::text[];
 
 -- ============================================================
 -- 3. CRIAR TABELAS QUE FALTAM

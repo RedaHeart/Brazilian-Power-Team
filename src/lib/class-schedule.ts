@@ -12,6 +12,7 @@ type ClassTemplate = {
   start_time: string;
   end_time: string;
   allowed_groups: string[];
+  allowed_genders: string[] | null;
   min_belt: string | null;
   active: boolean;
 };
@@ -21,6 +22,7 @@ type ExistingClass = {
   starts_at: string;
   ends_at: string | null;
   allowed_groups: string[] | null;
+  allowed_genders: string[] | null;
   min_belt: string | null;
 };
 
@@ -43,7 +45,8 @@ const matchesTemplateClass = (existingClass: ExistingClass, candidate: ExistingC
   sameInstant(existingClass.starts_at, candidate.starts_at) &&
   sameInstant(existingClass.ends_at || '', candidate.ends_at) &&
   (existingClass.min_belt || null) === (candidate.min_belt || null) &&
-  sameTextArray(existingClass.allowed_groups, candidate.allowed_groups || []);
+  sameTextArray(existingClass.allowed_groups, candidate.allowed_groups || []) &&
+  sameTextArray(existingClass.allowed_genders, candidate.allowed_genders || []);
 
 const buildClassDateTime = (date: Date, timeValue: string) => {
   const [hours, minutes] = timeValue.split(':').map(Number);
@@ -56,12 +59,12 @@ export const ensureClassesForRange = async ({ from, to }: DateRange) => {
   const [{ data: templates, error: templateError }, { data: existingClasses, error: classError }] = await Promise.all([
     supabase
       .from('class_templates')
-      .select('id, name, weekday, start_time, end_time, allowed_groups, min_belt, active')
+      .select('id, name, weekday, start_time, end_time, allowed_groups, allowed_genders, min_belt, active')
       .eq('active', true)
       .order('weekday', { ascending: true }),
     supabase
       .from('classes')
-      .select('title, starts_at, ends_at, allowed_groups, min_belt')
+      .select('title, starts_at, ends_at, allowed_groups, allowed_genders, min_belt')
       .gte('starts_at', from.toISOString())
       .lte('starts_at', to.toISOString()),
   ]);
@@ -89,6 +92,7 @@ export const ensureClassesForRange = async ({ from, to }: DateRange) => {
           starts_at: startsAt.toISOString(),
           ends_at: endsAt.toISOString(),
           allowed_groups: template.allowed_groups || [],
+          allowed_genders: template.allowed_genders || [],
           min_belt: template.min_belt,
         };
 

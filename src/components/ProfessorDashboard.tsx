@@ -25,6 +25,7 @@ import {
 } from 'lucide-react';
 import AppHeader from '@/components/AppHeader';
 import { buildWeekRange, ensureClassesForRange } from '@/lib/class-schedule';
+import { ALL_BELTS } from '@/lib/belts';
 import { supabase } from '@/lib/supabase';
 import { toast } from 'sonner';
 
@@ -599,11 +600,9 @@ const ProfessorDashboard = ({
                       className="h-12 rounded-2xl border border-slate-200 bg-white px-4 text-sm text-slate-700 focus:outline-none focus:ring-2 focus:ring-amber-400"
                     >
                       <option value="">Todas as faixas</option>
-                      <option value="Branca">Branca</option>
-                      <option value="Azul">Azul</option>
-                      <option value="Roxa">Roxa</option>
-                      <option value="Marrom">Marrom</option>
-                      <option value="Preta">Preta</option>
+                      {ALL_BELTS.map((belt) => (
+                        <option key={belt.value} value={belt.value}>{belt.label}</option>
+                      ))}
                     </select>
                   </div>
 

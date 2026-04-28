@@ -5,6 +5,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { ArrowLeft, UserPlus } from 'lucide-react';
+import { getBeltOptionsForCategory } from '@/lib/belts';
 
 const AddStudentForm = ({ onBack, onAddStudent }) => {
   const [formData, setFormData] = useState({
@@ -12,6 +13,7 @@ const AddStudentForm = ({ onBack, onAddStudent }) => {
     belt: 'Branca',
     category: 'Adulto',
     weight: '',
+    gender: '',
     email: '',
     password: '',
     phone: '',
@@ -22,7 +24,8 @@ const AddStudentForm = ({ onBack, onAddStudent }) => {
     const { name, value } = e.target;
     setFormData(prev => ({
       ...prev,
-      [name]: value
+      [name]: value,
+      ...(name === 'category' ? { belt: 'Branca' } : {}),
     }));
   };
 
@@ -130,7 +133,7 @@ const AddStudentForm = ({ onBack, onAddStudent }) => {
                   </div>
                 </div>
 
-                <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
                   <div className="space-y-2">
                     <Label htmlFor="belt">Graduação</Label>
                     <select
@@ -140,11 +143,9 @@ const AddStudentForm = ({ onBack, onAddStudent }) => {
                       onChange={handleInputChange}
                       className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background file:border-0 file:bg-transparent file:text-sm file:font-medium placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
                     >
-                      <option value="Branca">Branca</option>
-                      <option value="Azul">Azul</option>
-                      <option value="Roxa">Roxa</option>
-                      <option value="Marrom">Marrom</option>
-                      <option value="Preta">Preta</option>
+                      {getBeltOptionsForCategory(formData.category).map((belt) => (
+                        <option key={belt.value} value={belt.value}>{belt.label}</option>
+                      ))}
                     </select>
                   </div>
 
@@ -157,6 +158,7 @@ const AddStudentForm = ({ onBack, onAddStudent }) => {
                       onChange={handleInputChange}
                       className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background file:border-0 file:bg-transparent file:text-sm file:font-medium placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
                     >
+                      <option value="Kids">Kids</option>
                       <option value="Juvenil">Juvenil</option>
                       <option value="Adulto">Adulto</option>
                       <option value="Master">Master</option>
@@ -183,6 +185,21 @@ const AddStudentForm = ({ onBack, onAddStudent }) => {
                       <option value="Pesado">Pesado</option>
                       <option value="Super-pesado">Super-pesado</option>
                       <option value="Pesadíssimo">Pesadíssimo</option>
+                    </select>
+                  </div>
+
+                  <div className="space-y-2">
+                    <Label htmlFor="gender">Sexo</Label>
+                    <select
+                      id="gender"
+                      name="gender"
+                      value={formData.gender}
+                      onChange={handleInputChange}
+                      className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background file:border-0 file:bg-transparent file:text-sm file:font-medium placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
+                    >
+                      <option value="">Nao definido</option>
+                      <option value="MASCULINO">Masculino</option>
+                      <option value="FEMININO">Feminino</option>
                     </select>
                   </div>
                 </div>

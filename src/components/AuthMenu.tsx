@@ -7,6 +7,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { ArrowLeft, KeyRound, Loader2, User, UserPlus } from 'lucide-react';
 import { supabase } from '@/lib/supabase';
 import { toast } from 'sonner';
+import { getBeltOptionsForCategory, normalizeBeltForStorage } from '@/lib/belts';
 
 const AuthMenu = ({ initialMode = 'default', onBack, onLogin, onCreateStudent, onResetPasswordDone }) => {
   const [loginForm, setLoginForm] = useState({ email: '', password: '' });
@@ -125,7 +126,7 @@ const AuthMenu = ({ initialMode = 'default', onBack, onLogin, onCreateStudent, o
             full_name: studentForm.name,
             email: studentForm.email,
             phone: studentForm.phone,
-            belt: studentForm.belt.toUpperCase(),
+            belt: normalizeBeltForStorage(studentForm.belt),
             category: studentForm.category,
             weight: studentForm.weight,
             role: 'student',
@@ -389,11 +390,9 @@ const AuthMenu = ({ initialMode = 'default', onBack, onLogin, onCreateStudent, o
                         onChange={(e) => setStudentForm(prev => ({ ...prev, belt: e.target.value }))}
                         className="flex h-10 w-full rounded-md border border-input bg-white px-3 py-2 text-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
                       >
-                        <option value="Branca">Branca</option>
-                        <option value="Azul">Azul</option>
-                        <option value="Roxa">Roxa</option>
-                        <option value="Marrom">Marrom</option>
-                        <option value="Preta">Preta</option>
+                        {getBeltOptionsForCategory(studentForm.category).map((belt) => (
+                          <option key={belt.value} value={belt.value}>{belt.label}</option>
+                        ))}
                       </select>
                     </div>
                     <div className="space-y-2">
@@ -401,9 +400,10 @@ const AuthMenu = ({ initialMode = 'default', onBack, onLogin, onCreateStudent, o
                       <select
                         id="student-category"
                         value={studentForm.category}
-                        onChange={(e) => setStudentForm(prev => ({ ...prev, category: e.target.value }))}
+                        onChange={(e) => setStudentForm(prev => ({ ...prev, category: e.target.value, belt: 'Branca' }))}
                         className="flex h-10 w-full rounded-md border border-input bg-white px-3 py-2 text-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
                       >
+                        <option value="Kids">Kids</option>
                         <option value="Juvenil">Juvenil</option>
                         <option value="Adulto">Adulto</option>
                         <option value="Master">Master</option>

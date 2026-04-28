@@ -11,7 +11,8 @@ import PaymentReports from '@/components/PaymentReports';
 import PaymentManager from '@/components/PaymentManager';
 import AttendanceManager from '@/components/AttendanceManager';
 import AuthMenu from '@/components/AuthMenu';
-import { createIsolatedSupabaseClient, supabase } from '@/lib/supabase';
+import { createIsolatedSupabaseClient, isSupabaseConfigured, supabase } from '@/lib/supabase';
+import { normalizeBeltForStorage, toDisplayBelt } from '@/lib/belts';
 import { toast } from 'sonner';
 
 const MONTH_NAMES = ['Janeiro', 'Fevereiro', 'Marco', 'Abril', 'Maio', 'Junho', 'Julho', 'Agosto', 'Setembro', 'Outubro', 'Novembro', 'Dezembro'];
@@ -21,8 +22,6 @@ const monthLabel = (yyyyMM: string) => {
   return `${MONTH_NAMES[parseInt(month) - 1]} ${year}`;
 };
 
-const toDisplayBelt = (belt: string) => (belt ? belt.charAt(0).toUpperCase() + belt.slice(1).toLowerCase() : 'Branca');
-
 const transformProfile = (profile: any) => ({
   id: profile.id,
   name: profile.full_name || '',
@@ -31,6 +30,7 @@ const transformProfile = (profile: any) => ({
   weight: profile.weight || '',
   email: profile.email || '',
   phone: profile.phone || '',
+  gender: profile.gender || '',
   joinDate: profile.join_date || profile.created_at?.split('T')[0] || '',
   avatarUrl: profile.avatar_url || null,
   achievements: (profile.achievements || []).map((achievement: any) => achievement.achievement_text),
@@ -111,6 +111,10 @@ const Index = () => {
       setLoading(true);
 
       try {
+        if (!isSupabaseConfigured) {
+          return;
+        }
+
         if (isPasswordRecoveryLink()) {
           setAuthMode('reset-password');
           setCurrentView('auth');
@@ -140,6 +144,8 @@ const Index = () => {
   }, []);
 
   useEffect(() => {
+    if (!isSupabaseConfigured) return;
+
     const { data: listener } = supabase.auth.onAuthStateChange((event) => {
       if (event === 'PASSWORD_RECOVERY') {
         setAuthMode('reset-password');
@@ -162,6 +168,18 @@ const Index = () => {
   const getBeltColor = (belt: string) => {
     const colors: Record<string, string> = {
       Branca: 'bg-gray-100 text-gray-800',
+      'Cinza-Branca': 'bg-slate-100 text-slate-800',
+      Cinza: 'bg-slate-300 text-slate-900',
+      'Cinza-Preta': 'bg-slate-700 text-white',
+      'Amarela-Branca': 'bg-yellow-100 text-yellow-900',
+      Amarela: 'bg-yellow-300 text-yellow-950',
+      'Amarela-Preta': 'bg-yellow-500 text-slate-950',
+      'Laranja-Branca': 'bg-orange-100 text-orange-900',
+      Laranja: 'bg-orange-400 text-slate-950',
+      'Laranja-Preta': 'bg-orange-600 text-white',
+      'Verde-Branca': 'bg-emerald-100 text-emerald-900',
+      Verde: 'bg-emerald-500 text-white',
+      'Verde-Preta': 'bg-emerald-800 text-white',
       Azul: 'bg-blue-500 text-white',
       Roxa: 'bg-purple-500 text-white',
       Marrom: 'bg-amber-700 text-white',
@@ -304,11 +322,12 @@ const Index = () => {
         .from('profiles')
         .update({
           full_name: newStudentData.name,
-          belt: (newStudentData.belt || 'Branca').toUpperCase(),
+          belt: normalizeBeltForStorage(newStudentData.belt || 'Branca'),
           category: newStudentData.category,
           weight: newStudentData.weight,
           email: newStudentData.email,
           phone: newStudentData.phone,
+          gender: newStudentData.gender || null,
           role: existingProfile.role || 'student',
           join_date: newStudentData.joinDate || new Date().toISOString().split('T')[0],
           user_id: authData.user.id,
@@ -321,11 +340,12 @@ const Index = () => {
         id: authData.user.id,
         user_id: authData.user.id,
         full_name: newStudentData.name,
-        belt: (newStudentData.belt || 'Branca').toUpperCase(),
+        belt: normalizeBeltForStorage(newStudentData.belt || 'Branca'),
         category: newStudentData.category,
         weight: newStudentData.weight,
         email: newStudentData.email,
         phone: newStudentData.phone,
+        gender: newStudentData.gender || null,
         role: 'student',
         join_date: newStudentData.joinDate || new Date().toISOString().split('T')[0],
       });
@@ -349,10 +369,11 @@ const Index = () => {
       .update({
         full_name: updatedStudent.name,
         email: updatedStudent.email,
-        belt: updatedStudent.belt?.toUpperCase(),
+        belt: normalizeBeltForStorage(updatedStudent.belt || 'Branca'),
         category: updatedStudent.category,
         weight: updatedStudent.weight,
         phone: updatedStudent.phone,
+        gender: updatedStudent.gender || null,
         join_date: updatedStudent.joinDate || null,
         ...(updatedStudent.avatarUrl !== undefined ? { avatar_url: updatedStudent.avatarUrl } : {}),
       })
@@ -423,6 +444,24 @@ const Index = () => {
         <div className="text-center">
           <Loader2 className="mx-auto mb-4 h-10 w-10 animate-spin text-amber-400" />
           <p className="text-slate-300">A carregar...</p>
+        </div>
+      </div>
+    );
+  }
+
+  if (!isSupabaseConfigured) {
+    return (
+      <div className="app-shell flex min-h-screen items-center justify-center px-4 text-white">
+        <div className="panel-surface max-w-xl rounded-2xl p-8 text-center">
+          <img src="/logo.jpg" alt="Brazilian Power Team" className="mx-auto mb-6 h-20 w-20 rounded-full object-cover ring-2 ring-amber-400/60" />
+          <h1 className="font-display text-3xl uppercase tracking-[0.08em]">Configuracao em falta</h1>
+          <p className="mt-4 text-sm leading-6 text-slate-300">
+            Cria um ficheiro <span className="font-mono text-amber-300">.env</span> na raiz do projeto com as variaveis do Supabase para arrancar a aplicacao localmente.
+          </p>
+          <div className="mt-6 rounded-xl border border-white/10 bg-slate-950/50 p-4 text-left font-mono text-xs leading-6 text-slate-200">
+            <div>VITE_SUPABASE_URL=https://o-teu-projeto.supabase.co</div>
+            <div>VITE_SUPABASE_ANON_KEY=a-tua-anon-key</div>
+          </div>
         </div>
       </div>
     );
